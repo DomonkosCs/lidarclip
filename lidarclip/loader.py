@@ -106,6 +106,16 @@ class NuscenesImageLidarDataset(Dataset):
 
         # Load point cloud
         pc = LidarPointCloud.from_file(pcl_path)
+        # Remove points outside the specified range
+        # these values are set according to /workspace/lidarclip/dslc/mmdetection3d/configs/_base_/models/hv_pointpillars_fpn_nus.py, line 11
+        range_mask = np.ones(pc.points.shape[1], dtype=bool)
+        range_mask = np.logical_and(range_mask, pc.points[0, :] > -50)
+        range_mask = np.logical_and(range_mask, pc.points[0, :] < 50)
+        range_mask = np.logical_and(range_mask, pc.points[1, :] > -50)
+        range_mask = np.logical_and(range_mask, pc.points[1, :] < 50)
+        range_mask = np.logical_and(range_mask, pc.points[2, :] > -5)
+        range_mask = np.logical_and(range_mask, pc.points[2, :] < 3)
+        pc.points = pc.points[:, range_mask]
 
         # Load image
         im = Image.open(osp.join(self._nusc.dataroot, cam["filename"]))

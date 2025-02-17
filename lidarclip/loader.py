@@ -168,13 +168,15 @@ class NuscenesImageLidarDataset(Dataset):
         mask = np.logical_and(mask, points[1, :] >= 0)
         mask = np.logical_and(mask, points[1, :] <= h_og)
 
-        points_cam = torch.as_tensor(pc.points[:, mask].T)
+        points_cam = torch.as_tensor(pc.points.T)
+        # points_cam = torch.as_tensor(pc.points[:, mask].T)
+
         # shift from cam coords to KITTI style (x-forward, y-left, z-up)
         points_cam = points_cam[:, (2, 0, 1, 3)]
         points_cam[:, 1] = -points_cam[:, 1]
         points_cam[:, 2] = -points_cam[:, 2]
         points_cam[:, 3] /= NUSCENES_INTENSITY_MAX
-        return im, points_cam.contiguous()
+        return im, points_cam.contiguous(), mask, pcl_path
 
 
 class OnceImageLidarDataset(Dataset):
@@ -522,7 +524,9 @@ class JointImageLidarDataset:
 def _collate_fn(batch):
     batched_img = default_collate([elem[0] for elem in batch])
     batched_pc = [elem[1] for elem in batch]
-    return batched_img, batched_pc
+    batched_mask = [elem[2] for elem in batch]
+    batched_pcl_path = [elem[3] for elem in batch]
+    return batched_img, batched_pc, batched_mask, batched_pcl_path
 
 
 def build_loader(
